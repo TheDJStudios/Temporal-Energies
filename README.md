@@ -31,6 +31,9 @@ block is inert.
 
 Use Java 17 or newer:
 
+## Disclaimers and disclosures
+This mod was made with help from OpenAI Codex (Generative AI)
+
 ```sh
 ./gradlew build
 ```
