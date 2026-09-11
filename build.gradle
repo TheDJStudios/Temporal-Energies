@@ -1,0 +1,80 @@
+plugins {
+    id "fabric-loom" version "${loom_version}"
+    id "maven-publish"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { url = "https://api.modrinth.com/maven" }
+    maven { url = "https://maven.isxander.dev/releases" }
+    maven {
+        url = "https://theo.is-a.dev/maven/"
+        content { includeGroup "dev.drtheo" }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    modApi "teamreborn:energy:${project.energy_version}"
+    include "teamreborn:energy:${project.energy_version}"
+    modImplementation("maven.modrinth:ait:${project.ait_version}") {
+        exclude group: "net.fabricmc.fabric-api"
+    }
+    modImplementation "dev.drtheo:multidim:${project.multidim_version}"
+
+    // Runtime dependencies required by the official AiT 1.2.12 release.
+    modRuntimeOnly "maven.modrinth:amblekit:${project.amblekit_version}"
+    modRuntimeOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+    inputs.property "ait_version", project.ait_version
+
+    filesMatching("fabric.mod.json") {
+        expand(
+            version: project.version,
+            minecraft_version: project.minecraft_version,
+            loader_version: project.loader_version,
+            ait_version: project.ait_version
+        )
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = 17
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "temporalenergies",
+  "version": "${version}",
+  "name": "TemporalEnergies",
+  "description": "A bidirectional energy bridge for Adventures in Time TARDIS interiors.",
+  "authors": [],
+  "contact": {
+    "sources": "https://github.com/alhazbean/Temporal-Energies"
+  },
+  "license": "MIT",
+  "icon": "assets/temporalenergies/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.temporalenergies.TemporalEnergies"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17",
+    "fabric-api": "*",
+    "team_reborn_energy": ">=3.0.0",
+    "ait": ">=${ait_version}"
+  }
+}
