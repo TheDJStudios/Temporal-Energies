@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "paradox_utilities:block/power_core"
+    }
+  }
+}

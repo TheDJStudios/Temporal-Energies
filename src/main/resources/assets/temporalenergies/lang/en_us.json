@@ -1,5 +1,0 @@
-{
-  "block.temporalenergies.power_translator": "Power Translator",
-  "message.temporalenergies.connected": "TARDIS link: %s / %s AU (%s / %s Energy)",
-  "message.temporalenergies.not_connected": "No TARDIS Artron source detected"
-}

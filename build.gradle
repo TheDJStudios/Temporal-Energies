@@ -32,8 +32,12 @@ dependencies {
     }
     modImplementation "dev.drtheo:multidim:${project.multidim_version}"
 
+    // Optional integrations. These APIs are compile-only and are never bundled.
+    modCompileOnly "maven.modrinth:create-fabric:${project.create_version}"
+    modCompileOnly "maven.modrinth:cc-tweaked:${project.cc_tweaked_version}"
+
     // Runtime dependencies required by the official AiT 1.2.12 release.
-    modRuntimeOnly "maven.modrinth:amblekit:${project.amblekit_version}"
+    modImplementation "maven.modrinth:amblekit:${project.amblekit_version}"
     modRuntimeOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }
 
@@ -42,13 +46,17 @@ processResources {
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
     inputs.property "ait_version", project.ait_version
+    inputs.property "create_version", project.create_version
+    inputs.property "cc_tweaked_version", project.cc_tweaked_version
 
     filesMatching("fabric.mod.json") {
         expand(
             version: project.version,
             minecraft_version: project.minecraft_version,
             loader_version: project.loader_version,
-            ait_version: project.ait_version
+            ait_version: project.ait_version,
+            create_version: project.create_version,
+            cc_tweaked_version: project.cc_tweaked_version
         )
     }
 }
@@ -56,6 +64,13 @@ processResources {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     options.release = 17
+}
+
+// Loom itself needs Java 21+, while Minecraft 1.20.1 should launch on Java 17.
+tasks.withType(JavaExec).configureEach {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 java {

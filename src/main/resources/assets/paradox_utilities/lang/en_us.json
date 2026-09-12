@@ -1,0 +1,13 @@
+{
+  "block.paradox_utilities.power_core": "Power Core",
+  "block.paradox_utilities.binary_core": "Binary Core",
+  "itemGroup.paradox_utilities": "Paradox Utilities",
+  "message.paradox_utilities.power_connected": "TARDIS link: %s / %s AU (%s / %s FE)",
+  "message.paradox_utilities.not_connected": "No TARDIS Artron source detected",
+  "display_source.paradox_utilities.power_stored": "TARDIS Energy",
+  "display_source.paradox_utilities.power_input": "TARDIS Energy Input",
+  "display_source.paradox_utilities.power_output": "TARDIS Energy Output",
+  "display_source.paradox_utilities.overall_status": "TARDIS Status",
+  "display_source.paradox_utilities.flight_status": "TARDIS Flight Status",
+  "display_source.paradox_utilities.refueling_status": "TARDIS Refueling Status"
+}

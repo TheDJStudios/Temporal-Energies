@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "temporalenergies:power_translator"
+    "paradox_utilities:power_core",
+    "paradox_utilities:binary_core"
   ]
 }

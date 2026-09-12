@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "id": "temporalenergies",
+  "id": "paradox_utilities",
   "version": "${version}",
-  "name": "TemporalEnergies",
-  "description": "A bidirectional energy bridge for Adventures in Time TARDIS interiors.",
+  "name": "Paradox Utilities",
+  "description": "Energy, Create, and optional computer utilities for Adventures in Time TARDIS interiors.",
   "authors": [],
   "contact": {
     "sources": "https://github.com/alhazbean/Temporal-Energies"
   },
   "license": "MIT",
-  "icon": "assets/temporalenergies/icon.png",
+  "icon": "assets/paradox_utilities/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.temporalenergies.TemporalEnergies"
+      "dev.paradoxutilities.ParadoxUtilities"
     ]
   },
   "depends": {
@@ -23,5 +23,9 @@
     "fabric-api": "*",
     "team_reborn_energy": ">=3.0.0",
     "ait": ">=${ait_version}"
+  },
+  "suggests": {
+    "create": ">=${create_version}",
+    "computercraft": ">=${cc_tweaked_version}"
   }
 }
