@@ -61,6 +61,9 @@ sequences are shown as `Flight - <event name>`.
 
 Run Gradle with Java 21 or newer. The produced mod is still compiled for Java 17:
 
+## Disclaimers and disclosures
+This mod was made with help from OpenAI Codex (Generative AI)
+
 ```sh
 ./gradlew build
 ```
