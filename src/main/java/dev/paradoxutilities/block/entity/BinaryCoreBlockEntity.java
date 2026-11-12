@@ -1,8 +1,8 @@
 package dev.paradoxutilities.block.entity;
 
-import dev.amble.ait.core.tardis.ServerTardis;
-import dev.amble.ait.core.world.TardisServerWorld;
 import dev.paradoxutilities.ParadoxUtilities;
+import dev.paradoxutilities.tardis.TardisAccess;
+import dev.paradoxutilities.tardis.TardisAccessManager;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
@@ -14,7 +14,7 @@ public final class BinaryCoreBlockEntity extends BlockEntity {
     }
 
     @Nullable
-    public ServerTardis getTardis() {
-        return world instanceof TardisServerWorld tardisWorld ? tardisWorld.getTardis() : null;
+    public TardisAccess getTardis() {
+        return world == null ? null : TardisAccessManager.find(world);
     }
 }

@@ -1,9 +1,9 @@
 package dev.paradoxutilities.block.entity;
 
-import dev.amble.ait.core.tardis.ServerTardis;
-import dev.amble.ait.core.tardis.handler.FuelHandler;
-import dev.amble.ait.core.world.TardisServerWorld;
 import dev.paradoxutilities.ParadoxUtilities;
+import dev.paradoxutilities.tardis.TardisAccess;
+import dev.paradoxutilities.tardis.TardisFuelStorage;
+import dev.paradoxutilities.tardis.TardisAccessManager;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.fabricmc.fabric.api.transfer.v1.transaction.base.SnapshotParticipant;
 import net.minecraft.block.BlockState;
@@ -56,23 +56,17 @@ public final class PowerCoreBlockEntity extends BlockEntity {
     }
 
     @Nullable
-    public ServerTardis getTardis() {
-        if (world instanceof TardisServerWorld tardisWorld) return tardisWorld.getTardis();
-        return null;
+    public TardisAccess getTardis() {
+        return world == null ? null : TardisAccessManager.find(world);
     }
 
     private final class TardisEnergyStorage extends SnapshotParticipant<TransferSnapshot> implements EnergyStorage {
         @Override
         public long insert(long maxAmount, TransactionContext transaction) {
-            FuelHandler fuel = getFuelHandler();
-            if (fuel == null || maxAmount <= 0) return 0;
-
-            long accepted = Math.min(maxAmount, toEnergy(Math.max(0.0D,
-                    fuel.getMaxFuel() - fuel.getCurrentFuel())));
+            if (world == null) return 0;
+            long accepted = TardisAccessManager.energyStorage(world).insert(maxAmount, transaction);
             if (accepted <= 0) return 0;
-
             updateSnapshots(transaction);
-            fuel.setCurrentFuel(fuel.getCurrentFuel() + toArtron(accepted));
             refreshRates();
             inputThisTick += accepted;
             return accepted;
@@ -80,14 +74,10 @@ public final class PowerCoreBlockEntity extends BlockEntity {
 
         @Override
         public long extract(long maxAmount, TransactionContext transaction) {
-            FuelHandler fuel = getFuelHandler();
-            if (fuel == null || maxAmount <= 0) return 0;
-
-            long extracted = Math.min(maxAmount, toEnergy(fuel.getCurrentFuel()));
+            if (world == null) return 0;
+            long extracted = TardisAccessManager.energyStorage(world).extract(maxAmount, transaction);
             if (extracted <= 0) return 0;
-
             updateSnapshots(transaction);
-            fuel.setCurrentFuel(fuel.getCurrentFuel() - toArtron(extracted));
             refreshRates();
             outputThisTick += extracted;
             return extracted;
@@ -95,37 +85,33 @@ public final class PowerCoreBlockEntity extends BlockEntity {
 
         @Override
         public long getAmount() {
-            FuelHandler fuel = getFuelHandler();
-            return fuel == null ? 0 : toEnergy(fuel.getCurrentFuel());
+            return world == null ? 0 : TardisAccessManager.energyStorage(world).getAmount();
         }
 
         @Override
         public long getCapacity() {
-            FuelHandler fuel = getFuelHandler();
-            return fuel == null ? 0 : toEnergy(fuel.getMaxFuel());
+            TardisAccess tardis = getTardis();
+            return tardis == null ? 0 : TardisFuelStorage.toEnergy(tardis.maximumFuel());
         }
 
         @Override
         public boolean supportsInsertion() {
-            return getFuelHandler() != null;
+            return getTardis() != null;
         }
 
         @Override
         public boolean supportsExtraction() {
-            return getFuelHandler() != null;
+            return getTardis() != null;
         }
 
         @Override
         protected TransferSnapshot createSnapshot() {
-            FuelHandler fuel = getFuelHandler();
-            return new TransferSnapshot(fuel == null ? 0.0D : fuel.getCurrentFuel(), inputThisTick,
+            return new TransferSnapshot(inputThisTick,
                     outputThisTick, inputLastTick, outputLastTick, rateTick);
         }
 
         @Override
         protected void readSnapshot(TransferSnapshot snapshot) {
-            FuelHandler fuel = getFuelHandler();
-            if (fuel != null) fuel.setCurrentFuel(snapshot.fuel());
             inputThisTick = snapshot.inputThisTick();
             outputThisTick = snapshot.outputThisTick();
             inputLastTick = snapshot.inputLastTick();
@@ -133,21 +119,8 @@ public final class PowerCoreBlockEntity extends BlockEntity {
             rateTick = snapshot.rateTick();
         }
 
-        @Nullable
-        private FuelHandler getFuelHandler() {
-            ServerTardis tardis = getTardis();
-            return tardis == null ? null : tardis.fuel();
-        }
-
-        private long toEnergy(double artron) {
-            return Math.max(0L, (long) Math.floor(artron * ENERGY_PER_ARTRON));
-        }
-
-        private double toArtron(long energy) {
-            return energy / (double) ENERGY_PER_ARTRON;
-        }
     }
 
-    private record TransferSnapshot(double fuel, long inputThisTick, long outputThisTick,
+    private record TransferSnapshot(long inputThisTick, long outputThisTick,
                                     long inputLastTick, long outputLastTick, long rateTick) {}
 }

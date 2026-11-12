@@ -2,8 +2,8 @@ package dev.paradoxutilities.block;
 
 import java.util.Locale;
 
-import dev.amble.ait.core.tardis.ServerTardis;
 import dev.paradoxutilities.block.entity.PowerCoreBlockEntity;
+import dev.paradoxutilities.tardis.TardisAccess;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -40,7 +40,7 @@ public final class PowerCoreBlock extends BlockWithEntity {
         if (world.isClient()) return ActionResult.SUCCESS;
         if (!(world.getBlockEntity(pos) instanceof PowerCoreBlockEntity core)) return ActionResult.PASS;
 
-        ServerTardis tardis = core.getTardis();
+        TardisAccess tardis = core.getTardis();
         if (tardis == null) {
             player.sendMessage(Text.translatable("message.paradox_utilities.not_connected")
                     .formatted(Formatting.RED), true);
@@ -48,8 +48,8 @@ public final class PowerCoreBlock extends BlockWithEntity {
         }
 
         player.sendMessage(Text.translatable("message.paradox_utilities.power_connected",
-                format(tardis.fuel().getCurrentFuel()),
-                format(tardis.fuel().getMaxFuel()),
+                format(tardis.fuel()),
+                format(tardis.maximumFuel()),
                 core.energyStorage().getAmount(),
                 core.energyStorage().getCapacity()).formatted(Formatting.AQUA), true);
         return ActionResult.CONSUME;

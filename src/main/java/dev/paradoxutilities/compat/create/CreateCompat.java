@@ -8,7 +8,6 @@ import com.simibubi.create.content.redstone.displayLink.target.DisplayTargetStat
 import dev.paradoxutilities.ParadoxUtilities;
 import dev.paradoxutilities.block.entity.BinaryCoreBlockEntity;
 import dev.paradoxutilities.block.entity.PowerCoreBlockEntity;
-import dev.paradoxutilities.tardis.TardisStatus;
 import java.util.Locale;
 import java.util.function.Function;
 import net.minecraft.block.entity.BlockEntity;
@@ -20,34 +19,33 @@ public final class CreateCompat {
     private CreateCompat() {}
 
     public static void initialize() {
-        registerPower("power_stored", "display_source.paradox_utilities.power_stored", 20,
+        registerPower("power_stored", 20,
                 core -> formatEnergy(core.energyStorage().getAmount()) + " FE");
-        registerPower("power_input", "display_source.paradox_utilities.power_input", 1,
+        registerPower("power_input", 1,
                 core -> formatEnergy(core.getInputRate()) + " FE/t in");
-        registerPower("power_output", "display_source.paradox_utilities.power_output", 1,
+        registerPower("power_output", 1,
                 core -> formatEnergy(core.getOutputRate()) + " FE/t out");
-        registerBinary("overall_status", "display_source.paradox_utilities.overall_status",
-                core -> TardisStatus.overall(core.getTardis()));
-        registerBinary("flight_status", "display_source.paradox_utilities.flight_status",
-                core -> TardisStatus.flight(core.getTardis()));
-        registerBinary("refueling_status", "display_source.paradox_utilities.refueling_status",
-                core -> TardisStatus.refueling(core.getTardis()));
+        registerBinary("overall_status", core -> core.getTardis() == null
+                ? "Not connected" : core.getTardis().overallStatus());
+        registerBinary("flight_status", core -> core.getTardis() == null
+                ? "Not connected" : core.getTardis().flightStatus());
+        registerBinary("refueling_status", core -> core.getTardis() == null
+                ? "Not connected" : core.getTardis().refuelingStatus());
     }
 
-    private static void registerPower(String id, String translationKey, int refresh,
+    private static void registerPower(String id, int refresh,
                                       Function<PowerCoreBlockEntity, String> value) {
         CoreSource<PowerCoreBlockEntity> source = new CoreSource<>(PowerCoreBlockEntity.class,
-                translationKey, refresh, value);
+                refresh, value);
         Registry.register(CreateBuiltInRegistries.DISPLAY_SOURCE, ParadoxUtilities.id(id), source);
-        DisplaySource.BY_BLOCK_ENTITY.add(ParadoxUtilities.POWER_CORE_BLOCK_ENTITY, source);
+        DisplaySource.BY_BLOCK.add(ParadoxUtilities.POWER_CORE, source);
     }
 
-    private static void registerBinary(String id, String translationKey,
-                                       Function<BinaryCoreBlockEntity, String> value) {
+    private static void registerBinary(String id, Function<BinaryCoreBlockEntity, String> value) {
         CoreSource<BinaryCoreBlockEntity> source = new CoreSource<>(BinaryCoreBlockEntity.class,
-                translationKey, 10, value);
+                10, value);
         Registry.register(CreateBuiltInRegistries.DISPLAY_SOURCE, ParadoxUtilities.id(id), source);
-        DisplaySource.BY_BLOCK_ENTITY.add(ParadoxUtilities.BINARY_CORE_BLOCK_ENTITY, source);
+        DisplaySource.BY_BLOCK.add(ParadoxUtilities.BINARY_CORE, source);
     }
 
     private static String formatEnergy(long energy) {
@@ -56,13 +54,11 @@ public final class CreateCompat {
 
     private static final class CoreSource<T extends BlockEntity> extends SingleLineDisplaySource {
         private final Class<T> type;
-        private final String translationKey;
         private final int refresh;
         private final Function<T, String> value;
 
-        private CoreSource(Class<T> type, String translationKey, int refresh, Function<T, String> value) {
+        private CoreSource(Class<T> type, int refresh, Function<T, String> value) {
             this.type = type;
-            this.translationKey = translationKey;
             this.refresh = refresh;
             this.value = value;
         }
@@ -75,6 +71,5 @@ public final class CreateCompat {
 
         @Override protected boolean allowsLabeling(DisplayLinkContext context) { return true; }
         @Override public int getPassiveRefreshTicks() { return refresh; }
-        @Override protected String getTranslationKey() { return translationKey; }
     }
 }

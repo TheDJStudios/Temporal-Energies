@@ -3,7 +3,7 @@
   "id": "paradox_utilities",
   "version": "${version}",
   "name": "Paradox Utilities",
-  "description": "Energy, Create, and optional computer utilities for Adventures in Time TARDIS interiors.",
+  "description": "Energy, Create, and optional computer utilities for AiT and TARDIS Refined interiors.",
   "authors": [],
   "contact": {
     "sources": "https://github.com/alhazbean/Temporal-Energies"
@@ -21,11 +21,12 @@
     "minecraft": "${minecraft_version}",
     "java": ">=17",
     "fabric-api": "*",
-    "team_reborn_energy": ">=3.0.0",
-    "ait": ">=${ait_version}"
+    "team_reborn_energy": ">=3.0.0"
   },
   "suggests": {
+    "ait": ">=${ait_version}",
     "create": ">=${create_version}",
-    "computercraft": ">=${cc_tweaked_version}"
+    "computercraft": ">=${cc_tweaked_version}",
+    "tardis_refined": ">=${tardis_refined_mod_version}"
   }
 }

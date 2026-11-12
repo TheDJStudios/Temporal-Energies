@@ -4,21 +4,15 @@ import dan200.computercraft.api.lua.IArguments;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dev.amble.ait.core.tardis.ServerTardis;
-import dev.amble.ait.core.tardis.control.Control;
-import dev.amble.ait.registry.impl.ControlRegistry;
 import dev.paradoxutilities.block.entity.BinaryCoreBlockEntity;
-import dev.paradoxutilities.block.entity.PowerCoreBlockEntity;
-import dev.paradoxutilities.tardis.TardisStatus;
+import dev.paradoxutilities.tardis.TardisFuelStorage;
+import dev.paradoxutilities.tardis.TardisAccess;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 
 public final class BinaryCorePeripheral implements IPeripheral {
     private final BinaryCoreBlockEntity core;
@@ -36,127 +30,82 @@ public final class BinaryCorePeripheral implements IPeripheral {
 
     @LuaFunction(mainThread = true)
     public Map<String, Object> getTardisInfo() throws LuaException {
-        ServerTardis tardis = requireTardis();
+        TardisAccess tardis = requireTardisAccess();
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("name", tardis.stats().getName());
-        result.put("status", TardisStatus.overall(tardis));
-        result.put("flightStatus", TardisStatus.flight(tardis));
-        result.put("refuelingStatus", TardisStatus.refueling(tardis));
-        result.put("refueling", tardis.isRefueling());
-        result.put("crashing", tardis.travel().isCrashing());
-        result.put("flightProgress", tardis.travel().getDurationAsPercentage());
-        result.put("flightTicks", tardis.travel().getFlightTicks());
-        result.put("targetFlightTicks", tardis.travel().getTargetTicks());
-        result.put("energy", (long) Math.floor(tardis.fuel().getCurrentFuel()
-                * PowerCoreBlockEntity.ENERGY_PER_ARTRON));
-        result.put("energyCapacity", (long) Math.floor(tardis.fuel().getMaxFuel()
-                * PowerCoreBlockEntity.ENERGY_PER_ARTRON));
-        result.put("artron", tardis.fuel().getCurrentFuel());
-        result.put("artronCapacity", tardis.fuel().getMaxFuel());
-        result.put("flightEvent", tardis.sequence().hasActiveSequence()
-                ? tardis.sequence().getActiveSequence().id().toString() : "");
+        result.put("provider", tardis.provider());
+        result.put("name", tardis.name());
+        result.put("status", tardis.overallStatus());
+        result.put("flightStatus", tardis.flightStatus());
+        result.put("refuelingStatus", tardis.refuelingStatus());
+        result.put("refueling", tardis.refueling());
+        result.put("crashing", tardis.crashing());
+        result.put("flightProgress", tardis.flightProgress());
+        result.put("flightTicks", tardis.flightTicks());
+        result.put("targetFlightTicks", tardis.targetFlightTicks());
+        result.put("fuel", tardis.fuel());
+        result.put("fuelCapacity", tardis.maximumFuel());
+        result.put("energy", TardisFuelStorage.toEnergy(tardis.fuel()));
+        result.put("energyCapacity", TardisFuelStorage.toEnergy(tardis.maximumFuel()));
+        result.put("artron", tardis.fuel());
+        result.put("artronCapacity", tardis.maximumFuel());
+        result.put("flightEvent", tardis.flightEvent());
         return result;
     }
 
     @LuaFunction(mainThread = true)
     public List<String> listControls() {
-        return ControlRegistry.REGISTRY.stream().map(control -> control.id().toString()).sorted().toList();
+        TardisAccess tardis = core.getTardis();
+        return tardis == null ? List.of() : tardis.listControls();
     }
 
     @LuaFunction(mainThread = true)
     public Map<String, Object> getControls() throws LuaException {
+        TardisAccess tardis = requireTardisAccess();
         Map<String, Object> values = new LinkedHashMap<>();
-        for (String control : listControls()) values.put(control, readValue(requireTardis(), path(control)));
+        try {
+            for (String control : tardis.listControls()) values.put(control, tardis.getControl(control));
+        } catch (TardisAccess.ControlException exception) {
+            throw new LuaException(exception.getMessage());
+        }
         return values;
     }
 
     @LuaFunction(mainThread = true)
     public Object getControl(String name) throws LuaException {
-        requireControl(name);
-        return readValue(requireTardis(), path(name));
+        TardisAccess tardis = requireControlTardis();
+        try {
+            return tardis.getControl(name);
+        } catch (TardisAccess.ControlException exception) {
+            throw new LuaException(exception.getMessage());
+        }
     }
 
     @LuaFunction(mainThread = true)
     public String pressControl(IArguments arguments) throws LuaException {
         String name = arguments.getString(0);
         boolean leftClick = arguments.optBoolean(1, false);
-        ServerTardis tardis = requireTardis();
-        ServerPlayerEntity player = requirePlayer();
-        Control control = requireControl(name);
-        if (!control.canRun(tardis, player)) throw new LuaException("The TARDIS rejected that control");
-        Control.Result result = control.handleRun(tardis, player, (ServerWorld) core.getWorld(), core.getPos(), leftClick);
-        return result.name().toLowerCase(Locale.ROOT);
+        TardisAccess tardis = requireControlTardis();
+        try {
+            return tardis.pressControl(name, leftClick, requireControlContext());
+        } catch (TardisAccess.ControlException exception) {
+            throw new LuaException(exception.getMessage());
+        }
     }
 
     @LuaFunction(mainThread = true)
     public Object setControl(IArguments arguments) throws LuaException {
         String name = arguments.getString(0);
-        String key = path(name);
-        ServerTardis tardis = requireTardis();
-        ServerPlayerEntity player = requirePlayer();
-        Control control = requireControl(name);
-        if (!control.canRun(tardis, player)) throw new LuaException("The TARDIS rejected that control");
-        int integerValue = switch (key) {
-            case "direction", "throttle", "x", "y", "z" -> arguments.getInt(1);
-            default -> 0;
-        };
-
-        switch (key) {
-            case "antigravs" -> tardis.travel().antigravs().set(arguments.getBoolean(1));
-            case "protocol_116" -> tardis.travel().autopilot(arguments.getBoolean(1));
-            case "protocol_3" -> tardis.cloak().cloaked().set(arguments.getBoolean(1));
-            case "direction" -> tardis.travel().forceDestination(destination ->
-                    destination.rotation((byte) Math.floorMod(integerValue, 16)));
-            case "door_control" -> { if (arguments.getBoolean(1)) tardis.door().openDoors(); else tardis.door().closeDoors(); }
-            case "door_lock" -> tardis.door().setLocked(arguments.getBoolean(1));
-            case "alarms" -> { if (arguments.getBoolean(1)) tardis.alarm().enable(); else tardis.alarm().disable(); }
-            case "protocol_813" -> tardis.stats().hailMary().set(arguments.getBoolean(1));
-            case "handbrake" -> tardis.travel().handbrake(arguments.getBoolean(1));
-            case "power" -> { if (arguments.getBoolean(1)) tardis.fuel().enablePower(); else tardis.fuel().disablePower(); }
-            case "refueler" -> tardis.setRefueling(arguments.getBoolean(1));
-            case "protocol_19" -> tardis.stats().security().set(arguments.getBoolean(1));
-            case "shields" -> { if (arguments.getBoolean(1)) tardis.shields().enable(); else tardis.shields().disableAll(); }
-            case "protocol_1913" -> tardis.siege().setActive(arguments.getBoolean(1));
-            case "throttle" -> tardis.travel().speed(integerValue);
-            case "x" -> tardis.travel().forceDestination(destination -> destination.pos(
-                    integerValue, destination.getPos().getY(), destination.getPos().getZ()));
-            case "y" -> tardis.travel().forceDestination(destination -> destination.pos(
-                    destination.getPos().getX(), integerValue, destination.getPos().getZ()));
-            case "z" -> tardis.travel().forceDestination(destination -> destination.pos(
-                    destination.getPos().getX(), destination.getPos().getY(), integerValue));
-            default -> throw new LuaException("Control '" + name + "' is an action; use pressControl instead");
+        TardisAccess tardis = requireControlTardis();
+        try {
+            return tardis.setControl(name, arguments.get(1), requireControlContext());
+        } catch (TardisAccess.ControlException exception) {
+            throw new LuaException(exception.getMessage());
         }
-        return readValue(tardis, key);
     }
 
-    private Object readValue(ServerTardis tardis, String key) {
-        BlockPos destination = tardis.travel().destination().getPos();
-        return switch (key) {
-            case "antigravs" -> tardis.travel().antigravs().get();
-            case "protocol_116" -> tardis.travel().autopilot();
-            case "protocol_3" -> tardis.cloak().cloaked().get();
-            case "direction" -> (int) tardis.travel().destination().getRotation();
-            case "door_control" -> tardis.door().isOpen();
-            case "door_lock" -> tardis.door().locked();
-            case "alarms" -> tardis.alarm().isEnabled();
-            case "protocol_813" -> tardis.stats().hailMary().get();
-            case "handbrake" -> tardis.travel().handbrake();
-            case "power" -> tardis.fuel().hasPower();
-            case "refueler" -> tardis.isRefueling();
-            case "protocol_19" -> tardis.stats().security().get();
-            case "shields" -> tardis.shields().shielded().get();
-            case "protocol_1913" -> tardis.siege().isActive();
-            case "throttle" -> tardis.travel().speed();
-            case "x" -> destination.getX();
-            case "y" -> destination.getY();
-            case "z" -> destination.getZ();
-            default -> "action";
-        };
-    }
-
-    private ServerTardis requireTardis() throws LuaException {
-        ServerTardis tardis = core.getTardis();
-        if (tardis == null) throw new LuaException("Binary Core is not inside a TARDIS");
+    private TardisAccess requireTardisAccess() throws LuaException {
+        TardisAccess tardis = core.getTardis();
+        if (tardis == null) throw new LuaException("Binary Core is not inside a supported TARDIS");
         return tardis;
     }
 
@@ -170,14 +119,16 @@ public final class BinaryCorePeripheral implements IPeripheral {
         return serverPlayer;
     }
 
-    private Control requireControl(String name) throws LuaException {
-        Identifier id = Identifier.tryParse(name.contains(":") ? name : "ait:" + name);
-        if (id == null) throw new LuaException("Invalid control id: " + name);
-        return ControlRegistry.fromId(id).orElseThrow(() -> new LuaException("Unknown control: " + name));
+    private TardisAccess requireControlTardis() throws LuaException {
+        TardisAccess tardis = requireTardisAccess();
+        if (!tardis.supportsControls()) {
+            throw new LuaException("Direct console controls are not available for " + tardis.provider());
+        }
+        return tardis;
     }
 
-    private static String path(String name) {
-        int separator = name.indexOf(':');
-        return separator < 0 ? name : name.substring(separator + 1);
+    private TardisAccess.ControlContext requireControlContext() throws LuaException {
+        ServerPlayerEntity player = requirePlayer();
+        return new TardisAccess.ControlContext(player, (ServerWorld) core.getWorld(), core.getPos());
     }
 }

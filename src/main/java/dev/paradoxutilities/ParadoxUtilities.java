@@ -4,8 +4,10 @@ import dev.paradoxutilities.block.BinaryCoreBlock;
 import dev.paradoxutilities.block.PowerCoreBlock;
 import dev.paradoxutilities.block.entity.BinaryCoreBlockEntity;
 import dev.paradoxutilities.block.entity.PowerCoreBlockEntity;
+import dev.paradoxutilities.compat.ait.AitCompat;
 import dev.paradoxutilities.compat.computercraft.ComputerCraftCompat;
 import dev.paradoxutilities.compat.create.CreateCompat;
+import dev.paradoxutilities.compat.tardisrefined.TardisRefinedCompat;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.loader.api.FabricLoader;
@@ -68,11 +70,17 @@ public final class ParadoxUtilities implements ModInitializer {
         EnergyStorage.SIDED.registerForBlockEntity((blockEntity, direction) -> blockEntity.energyStorage(),
                 POWER_CORE_BLOCK_ENTITY);
 
+        if (FabricLoader.getInstance().isModLoaded("ait")) {
+            AitCompat.initialize();
+        }
         if (FabricLoader.getInstance().isModLoaded("create")) {
             CreateCompat.initialize();
         }
         if (FabricLoader.getInstance().isModLoaded("computercraft")) {
             ComputerCraftCompat.initialize();
+        }
+        if (FabricLoader.getInstance().isModLoaded("tardis_refined")) {
+            TardisRefinedCompat.initialize();
         }
     }
 

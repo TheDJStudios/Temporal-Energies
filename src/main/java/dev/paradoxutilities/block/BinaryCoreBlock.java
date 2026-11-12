@@ -1,7 +1,7 @@
 package dev.paradoxutilities.block;
 
 import dev.paradoxutilities.block.entity.BinaryCoreBlockEntity;
-import dev.paradoxutilities.tardis.TardisStatus;
+import dev.paradoxutilities.tardis.TardisAccess;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -30,12 +30,18 @@ public final class BinaryCoreBlock extends BlockWithEntity {
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
                               BlockHitResult hit) {
         if (world.isClient()) return ActionResult.SUCCESS;
-        if (!(world.getBlockEntity(pos) instanceof BinaryCoreBlockEntity core) || core.getTardis() == null) {
+        if (!(world.getBlockEntity(pos) instanceof BinaryCoreBlockEntity core)) {
             player.sendMessage(Text.translatable("message.paradox_utilities.not_connected")
                     .formatted(Formatting.RED), true);
             return ActionResult.CONSUME;
         }
-        player.sendMessage(Text.literal(TardisStatus.overall(core.getTardis())).formatted(Formatting.AQUA), true);
+        TardisAccess tardis = core.getTardis();
+        if (tardis == null) {
+            player.sendMessage(Text.translatable("message.paradox_utilities.not_connected")
+                    .formatted(Formatting.RED), true);
+            return ActionResult.CONSUME;
+        }
+        player.sendMessage(Text.literal(tardis.overallStatus()).formatted(Formatting.AQUA), true);
         return ActionResult.CONSUME;
     }
 }
